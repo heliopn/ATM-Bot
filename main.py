@@ -40,7 +40,7 @@ async def on_message(message):
 	brief="This command say to you the project's github."
 )
 async def source(ctx, *args):
-	await ctx.channel.send("https://github.com/heliopn/ATM-Bot/tree/master")
+	await ctx.channel.send("https://github.com/heliopn/ATM-Bot/")
 
 @bot.command(
 	help="Looks like you need some help.",

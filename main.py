@@ -40,19 +40,13 @@ async def on_message(message):
 	brief="This command say to you the project's github."
 )
 async def source(ctx, *args):
-    
-	response = requests.get(base_url+"/search?url={}"
-    .format(urllib.parse.quote_plus(args[0]))
-    )
-	# SENDS A MESSAGE TO THE CHANNEL USING THE CONTEXT OBJECT.
-	await ctx.channel.send(response.json()['result'][0]['video'])
+	await ctx.channel.send("https://github.com/heliopn/ATM-Bot/tree/master")
 
 @bot.command(
 	help="Looks like you need some help.",
 	brief="This command can search for a anime moment using a URL image"
 )
 async def rewind(ctx, *args):
-    
 	response = requests.get(base_url+"/search?url={}"
     .format(urllib.parse.quote_plus(args[0]))
     )

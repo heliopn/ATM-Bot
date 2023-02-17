@@ -19,7 +19,7 @@ intents.members = True
 intents.messages = True
 
 # Create client for Discord
-bot = commands.Bot(intents=intents,command_prefix="/")
+bot = commands.Bot(intents=intents,command_prefix="!")
 
 # TURN ON API 
 base_url = "https://api.trace.moe"
@@ -35,14 +35,23 @@ async def on_message(message):
 	# INCLUDES THE COMMANDS FOR THE BOT. WITHOUT THIS LINE, YOU CANNOT TRIGGER YOUR COMMANDS.
 	await bot.process_commands(message)
 
-# COMMAND $PRINT. THIS TAKES AN IN A LIST OF ARGUMENTS FROM THE USER AND SIMPLY PRINTS THE VALUES BACK TO THE CHANNEL.
 @bot.command(
-	# ADDS THIS VALUE TO THE $HELP PRINT MESSAGE.
 	help="Looks like you need some help.",
-	# ADDS THIS VALUE TO THE $HELP MESSAGE.
+	brief="This command say to you the project's github."
+)
+async def source(ctx, *args):
+    
+	response = requests.get(base_url+"/search?url={}"
+    .format(urllib.parse.quote_plus(args[0]))
+    )
+	# SENDS A MESSAGE TO THE CHANNEL USING THE CONTEXT OBJECT.
+	await ctx.channel.send(response.json()['result'][0]['video'])
+
+@bot.command(
+	help="Looks like you need some help.",
 	brief="This command can search for a anime moment using a URL image"
 )
-async def remember_link(ctx, *args):
+async def rewind(ctx, *args):
     
 	response = requests.get(base_url+"/search?url={}"
     .format(urllib.parse.quote_plus(args[0]))

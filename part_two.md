@@ -24,11 +24,11 @@ Para responder às consultas de busca, foi criado um índice invertido que mapei
 
 ## Implementação da busca usando um índice de semelhança baseado em Wordnet
 
-Foi implementado um índice de semelhança baseado em Wordnet para fazer uma busca mais avançada. O bot utiliza a biblioteca nltk para acessar o Wordnet e encontrar sinônimos e palavras relacionadas à consulta do usuário. Isso permite que o bot encontre documentos que não contenham exatamente a consulta do usuário, mas que ainda sejam relevantes.
+Foi implementado um índice de semelhança baseado em Wordnet para fazer uma busca mais avançada. O bot utiliza a biblioteca nltk para acessar o Wordnet e encontrar sinônimos e palavras relacionadas à consulta do usuário. Isso permite que o bot encontre páginas que não contenham exatamente a consulta do usuário, mas que ainda sejam relevantes.
 
 ## Configuração das respostas do bot
 
-Com base nas consultas de busca do usuário, o bot fornece uma resposta com uma lista de documentos que correspondem à consulta. As respostas do bot foram formatadas utilizando a biblioteca discord.py e enviadas para o usuário do Discord.
+Com base nas consultas de busca do usuário, o bot fornece uma resposta com uma lista de páginas que correspondem à consulta.
 
 ## Conclusão
 

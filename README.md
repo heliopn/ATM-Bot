@@ -9,3 +9,6 @@ This bot can make you rewind a moment from your favorite anime just using one pr
 ### Commands:
 &nbsp;&nbsp;&nbsp;&nbsp;!source --> return the github page link <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;!rewind --> recive a anime scene print and return a link with a short video of the scene print
+&nbsp;&nbsp;&nbsp;&nbsp;!crawl --> recive a link and make a crawler inside the link's page to search for more links and contents. Save it for later research.
+&nbsp;&nbsp;&nbsp;&nbsp;!search --> recive a text and search it in the data base to return the links that have similar content
+&nbsp;&nbsp;&nbsp;&nbsp;!wn_search --> to the same as search but used when you need simmilar content and not literaly the same content. Uses WordNet to do it.

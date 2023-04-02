@@ -5,12 +5,11 @@ import requests
 import urllib.parse
 import sqlite3
 from bs4 import BeautifulSoup
-from db_classes import CrawlerDatabase
+from crawler import Crawler
 
 
 # Get the values of the DATABASE_URL and API_KEY variables
 token = os.getenv("TOKEN")
-print(token)
 bot_key = os.getenv("PUBLIC_KEY")
 client_id = os.getenv("CLIENT_ID")
 db_user = os.getenv("DB_USER")
@@ -23,15 +22,14 @@ intents.members = True
 intents.messages = True
 
 # Inicializing the DB Connection
-db = CrawlerDatabase(db_name)
+db = Crawler()
 
 # Create client for Discord
 bot = commands.Bot(intents=intents,command_prefix="!")
 
 # TURN ON API 
 base_url = "https://api.trace.moe"
-j = requests.get(base_url+"/search?url={}".format(urllib.parse.quote_plus("https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%3Fid%3DOIP.OPaoymER8ujj5G2Q15CYdwHaEK%26pid%3DApi&f=1&ipt=d4ae217d895b28ad79f8d4448ba1e83e1972ccc796911021dcf152fc184a7d19&ipo=images"))).json()
-print(j)
+
 # ON_MESSAGE() EVENT LISTENER. NOTICE IT IS USING @BOT.EVENT AS OPPOSED TO @BOT.COMMAND().
 @bot.event
 async def on_message(message):
@@ -75,31 +73,31 @@ async def rewind(ctx, *args):
 	brief="This command can save pages you send to it."
 )
 async def crawl(ctx, *args):
-	db = URLDatabase(db_user,db_password,db_name)
-	soup = BeautifulSoup(args[0], 'html.parser')
-	db.add_page(args[0],)
+	# Fetch the HTML document from the URL
+	url = args[0]
+	response = db.crawl(url,)
 	
 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
-	await ctx.author.send(response.json()['result'][0]['video'])
+	await ctx.author.send(response)
 
 @bot.command(
 	help="Looks like you need some help.",
 	brief="This command can search terms inside all saved pages."
 )
 async def search(ctx, *args):
-	response = requests.get(base_url+"/search?url={}".format(urllib.parse.quote_plus(args[0])))
+	response = db.search(args[0],)
 	
 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
-	await ctx.author.send(response.json()['result'][0]['video'])
+	await ctx.author.send(response)
 
 @bot.command(
 	help="Looks like you need some help.",
 	brief="This command can search terms inside all saved pages."
 )
 async def wn_search(ctx, *args):
-	response = requests.get(base_url+"/search?url={}".format(urllib.parse.quote_plus(args[0])))
+	response = db.wn_search(args[0],)
 	
 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
-	await ctx.author.send(response.json()['result'][0]['video'])
+	await ctx.author.send(response)
 
 bot.run(token)

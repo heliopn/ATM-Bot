@@ -4,7 +4,7 @@
 			"path": "."
 		},
 		{
-			"path": "../NLP"
+			"path": "../CrawlerAPI"
 		}
 	],
 	"settings": {}

@@ -2,6 +2,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.tokenize import word_tokenize
 from urllib.parse import urlparse
+from nltk.corpus import stopwords
 from nltk.corpus import wordnet
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
@@ -9,9 +10,9 @@ from collections import deque
 import requests
 import sqlite3
 import logging
+import nltk
 import time 
 import re
-
 
 class Crawler:
     def __init__(self):
@@ -20,6 +21,10 @@ class Crawler:
         self.conn = sqlite3.connect('crawler.db')
         self.cursor = self.conn.cursor()
         self.url_queue = deque()
+
+        nltk.download('stopwords')
+        nltk.download('punkt')
+        self.stop_words = set(stopwords.words('english'))
 
         # Create a logger
         self.logger = logging.getLogger(__name__)
@@ -175,7 +180,9 @@ class Crawler:
 
     def search(self, query):
         self.logger.debug('Searching for %s', query)
-        query_words = query.split()
+        query_words = query.lower().split(" ")
+
+        # GET the set of pages for each word
         page_sets = []
         for word in query_words:
             page_ids = self._get_page_ids(word)
@@ -186,21 +193,47 @@ class Crawler:
             result_set = page_sets[0].intersection(*page_sets[1:])
         else:
             result_set = set()
+
+        # Check if result_set is empty
+        if not result_set:
+            self.logger.debug('No results found for %s', query)
+            return "No results found for query: {}".format(query)
+
+        urls = [self._get_url_by_page_id(page_id) for page_id in result_set]
+        corpus = [self._get_content_by_url(url) for url in urls]
+        tfidf = TfidfVectorizer(tokenizer=word_tokenize, stop_words='english')
+        tfidf_matrix = tfidf.fit_transform(corpus)
+        query_vec = tfidf.transform([query])
+        cosine_similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
+        document_scores = list(zip(urls, cosine_similarities))
+        document_scores = sorted(document_scores, key=lambda x: x[1], reverse=True)
         self.logger.debug('Search finished for %s', query)
-        return [self._get_url_by_page_id(page_id) for page_id in result_set]
+
+        top_result = document_scores[0]
+        return top_result[0]
+
+
 
     def wn_search(self, query):
         self.logger.debug('WordNet search for %s', query)
-        synsets = wordnet.synsets(query)
+        # Tokenize the query into individual words
+        query_words = nltk.word_tokenize(query.lower())
+        # Get all synsets for each query word
+        synsets = []
+        for word in query_words:
+            synsets.extend(wordnet.synsets(word))
         if not synsets:
-            return []
-
+            self.logger.debug('WordNet search no synsets found for %s', query)
+            return f"No results found for query: {query}"
+        
+        # Get all unique query words from the synsets
         query_words = set()
         for synset in synsets:
             for lemma in synset.lemmas():
                 word = lemma.name().lower()
                 query_words.add(word)
 
+        # Get all page sets for each query word
         page_sets = []
         for word in query_words:
             page_ids = self._get_page_ids(word)
@@ -214,6 +247,12 @@ class Crawler:
 
         # Compute document scores using TF-IDF and cosine similarity
         urls = [self._get_url_by_page_id(page_id) for page_id in result_set]
+
+        # Verify if has any URLs
+        if not urls:
+            self.logger.debug('WordNet search no URLs found for %s', query)
+            return f"No results found for query: {query}"
+        
         corpus = [self._get_content_by_url(url) for url in urls]
         tfidf = TfidfVectorizer(tokenizer=word_tokenize, stop_words='english')
         tfidf_matrix = tfidf.fit_transform(corpus)
@@ -222,7 +261,10 @@ class Crawler:
         document_scores = list(zip(urls, cosine_similarities))
         document_scores = sorted(document_scores, key=lambda x: x[1], reverse=True)
         self.logger.debug('WordNet search finished for %s', query)
-        return document_scores
+
+        top_result = document_scores[0]
+        return top_result[0]
+
 
     def _get_url_by_page_id(self, page_id):
         self.cursor.execute('''

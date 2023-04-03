@@ -12,8 +12,8 @@ from crawler import Crawler
 token = os.getenv("TOKEN")
 bot_key = os.getenv("PUBLIC_KEY")
 client_id = os.getenv("CLIENT_ID")
-db_user = os.getenv("DB_USER")
-db_password = os.getenv("DB_PASSWORD")
+# db_user = os.getenv("DB_USER")
+# db_password = os.getenv("DB_PASSWORD")
 db_name = "dbbot"
 
 # Define your bot intents
@@ -85,8 +85,9 @@ async def crawl(ctx, *args):
 	brief="This command can search terms inside all saved pages."
 )
 async def search(ctx, *args):
-	response = db.search(args[0],)
-	
+	query = ' '.join(args)
+	response = db.search(query)
+
 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
 	await ctx.author.send(response)
 
@@ -95,7 +96,8 @@ async def search(ctx, *args):
 	brief="This command can search terms inside all saved pages."
 )
 async def wn_search(ctx, *args):
-	response = db.wn_search(args[0],)
+	query = ' '.join(args)
+	response = db.wn_search(query)
 	
 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
 	await ctx.author.send(response)

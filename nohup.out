@@ -1,0 +1,67 @@
+Traceback (most recent call last):
+  File "/home/iskandar/Documents/Insper/9_semestre/ATM-Bot/main.py", line 2, in <module>
+    import discord
+ModuleNotFoundError: No module named 'discord'
+Traceback (most recent call last):
+  File "/home/iskandar/Documents/Insper/9_semestre/ATM-Bot/main.py", line 2, in <module>
+    import discord
+ModuleNotFoundError: No module named 'discord'
+Traceback (most recent call last):
+  File "/home/iskandar/Documents/Insper/9_semestre/ATM-Bot/main.py", line 2, in <module>
+    import discord
+ModuleNotFoundError: No module named 'discord'
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+Traceback (most recent call last):
+  File "/home/iskandar/Documents/Insper/9_semestre/ATM-Bot/main.py", line 2, in <module>
+    import discord
+ModuleNotFoundError: No module named 'discord'
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+no change     /home/iskandar/miniconda3/condabin/conda
+no change     /home/iskandar/miniconda3/bin/conda
+no change     /home/iskandar/miniconda3/bin/conda-env
+no change     /home/iskandar/miniconda3/bin/activate
+no change     /home/iskandar/miniconda3/bin/deactivate
+no change     /home/iskandar/miniconda3/etc/profile.d/conda.sh
+no change     /home/iskandar/miniconda3/etc/fish/conf.d/conda.fish
+no change     /home/iskandar/miniconda3/shell/condabin/Conda.psm1
+no change     /home/iskandar/miniconda3/shell/condabin/conda-hook.ps1
+no change     /home/iskandar/miniconda3/lib/python3.10/site-packages/xontrib/conda.xsh
+no change     /home/iskandar/miniconda3/etc/profile.d/conda.csh
+no change     /home/iskandar/.bashrc
+No action taken.
+

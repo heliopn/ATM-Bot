@@ -6,7 +6,11 @@ from nltk.corpus import stopwords
 from nltk.corpus import wordnet
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
+from typing import Tuple, List
 from collections import deque
+from sqlite3 import Error
+from queue import Queue
+import threading
 import requests
 import sqlite3
 import logging
@@ -20,6 +24,10 @@ class Crawler:
         self.index = {}
         self.conn = sqlite3.connect('crawler.db')
         self.cursor = self.conn.cursor()
+
+        # Create a connection pool with a maximum of 5 connections
+        self.connection_pool = Queue(maxsize=5)
+
         self.url_queue = deque()
 
         nltk.download('stopwords')
@@ -62,26 +70,16 @@ class Crawler:
 
         self.conn.commit()
 
-    def crawl(self, url):
-        self.logger.debug(f"Crawling {url}...")
-        # Parse URL
-        parsed_url = urlparse(url)
-        base_url = parsed_url.scheme + '://' + parsed_url.netloc
+    def create_connection(self):
+        connection = None
+        try:
+            connection = self.connection_pool.get(timeout=1)
+        except:
+            print("Connection pool exhausted")
+        return connection or sqlite3.connect('crawler.db')
 
-        # Crawl the initial URL
-        self._crawl_url(base_url, url)
-
-        # Keep crawling until there are no more links to crawl
-        while True:
-            # Get the next URL to crawl
-            next_url = self._get_next_url()
-            if next_url is None:
-                break
-
-            # Crawl the URL
-            self._crawl_url(base_url, next_url)
-            self.logger.debug('Crawling finished for %s', next_url)
-        return 'Crawling complete'
+    def release_connection(self,connection):
+        self.connection_pool.put(connection)
     
     def _get_next_url(self):
         # Return the next URL in the queue, if there is one
@@ -90,41 +88,20 @@ class Crawler:
             return next_url
         # If there are no unvisited URLs, return None
         return None        
-    
-    def _crawl_url(self, base_url, url):
-        # Check if URL has already been visited
-        if url in self.visited_urls:
-            return
-        
-        # Fetch the page content
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Add page to database
-        self.cursor.execute('INSERT OR IGNORE INTO pages (url, content) VALUES (?, ?)', (url, soup.get_text()))
-        page_id = self.cursor.lastrowid
-        
-        # Add words and word occurrences to database
-        words = self._get_words(soup.get_text())
-        for word in words:
-            word_id = self._get_word_id(word)
-            self.cursor.execute('INSERT INTO word_occurrences (page_id, word_id) VALUES (?, ?)', (page_id, word_id))
-        
-        # Add URLs to queue
-        for link in soup.find_all('a'):
-            link_url = link.get('href')
-            if link_url is not None and not self._is_external_link(base_url, link_url):
-                self._add_url_to_queue(base_url, link_url)
-        
-        # Mark URL as visited
-        self.visited_urls.add(url)
-        self.conn.commit()
 
+    def _canonicalize_url(self, base_url, url):
+        return urljoin(base_url, url)
 
-    def _get_word_id(self, word):
-        self.cursor.execute('INSERT OR IGNORE INTO words (word) VALUES (?)', (word,))
-        self.cursor.execute('SELECT id FROM words WHERE word = ?', (word,))
-        return self.cursor.fetchone()[0]
+    def _add_url_to_queue(self, base_url, url):
+        # Convert the URL to a canonical form
+        url = self._canonicalize_url(base_url, url)
+        if url not in self.visited_urls and url not in self.url_queue:
+            self.url_queue.append(url)
+
+    def _get_word_id(self, word, cursor):
+        cursor.execute('INSERT OR IGNORE INTO words (word) VALUES (?)', (word,))
+        cursor.execute('SELECT id FROM words WHERE word = ?', (word,))
+        return cursor.fetchone()[0]
 
     def _get_words(self, text):
         """Extracts all words from a text string, removing punctuation and digits."""
@@ -147,24 +124,62 @@ class Crawler:
     
         # Compare the hostname of the base URL and the link URL
         return parsed_base_url.netloc != parsed_link_url.netloc
+    
+    def _crawl_url(self, base_url, url):
+        # Check if URL has already been visited
+        if url in self.visited_urls:
+            return
+        
+        connection = self.create_connection()
+        cursor = connection.cursor()
 
-    def _add_url_to_queue(self, base_url, url):
-        # Convert the URL to a canonical form
-        url = self._canonicalize_url(base_url, url)
-        if url not in self.visited_urls and url not in self.url_queue:
-            self.url_queue.append(url)
+        # Fetch the page content
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Add page to database
+        cursor.execute('INSERT OR IGNORE INTO pages (url, content) VALUES (?, ?)', (url, soup.get_text()))
+        page_id = cursor.lastrowid
+        
+        # Add words and word occurrences to database
+        words = self._get_words(soup.get_text())
+        for word in words:
+            word_id = self._get_word_id(word, cursor)
+            cursor.execute('INSERT INTO word_occurrences (page_id, word_id) VALUES (?, ?)', (page_id, word_id))
+        
+        # Add URLs to queue
+        for link in soup.find_all('a'):
+            link_url = link.get('href')
+            if link_url is not None and not self._is_external_link(base_url, link_url):
+                self._add_url_to_queue(base_url, link_url)
+        
+        # Mark URL as visited
+        self.visited_urls.add(url)
+        connection.commit()
+        self.release_connection(connection)
 
-    def _canonicalize_url(self, base_url, url):
-        return urljoin(base_url, url)
-                
-    def _add_url(self, url):
-        if url not in self.visited_urls:
-            self.visited_urls.add(url)
+    def crawl(self, url):
+        self.logger.debug(f"Crawling {url}...")
+        # Parse URL
+        parsed_url = urlparse(url)
+        base_url = parsed_url.scheme + '://' + parsed_url.netloc
 
-    def _get_page_ids(self, word):
-        conn = sqlite3.connect('crawler.db')
-        cursor = conn.cursor()
+        # Crawl the initial URL
+        self._crawl_url(base_url, url)
 
+        # Keep crawling until there are no more links to crawl
+        while True:
+            # Get the next URL to crawl
+            next_url = self._get_next_url()
+            if next_url is None:
+                break
+
+            # Crawl the URL
+            self._crawl_url(base_url, next_url)
+            self.logger.debug('Crawling finished for %s', next_url)
+        return 'Crawling complete'
+
+    def _get_page_ids(self, word, cursor):
         # Get the IDs of pages that contain the word
         query = '''
             SELECT page_id
@@ -175,17 +190,37 @@ class Crawler:
         cursor.execute(query, (word,))
         page_ids = [row[0] for row in cursor.fetchall()]
 
-        conn.close()
         return page_ids
+
+    def _get_url_by_page_id(self, page_id, cursor):
+        cursor.execute('''
+            SELECT url FROM pages WHERE id = ?
+        ''', (page_id,))
+        row = cursor.fetchone()
+        if row:
+            return row[0]
+        return None
+
+    def _get_content_by_url(self, url, cursor):
+        cursor.execute('''
+            SELECT content FROM pages WHERE url = ?
+        ''', (url,))
+        row = cursor.fetchone()
+        if row:
+            return row[0]
+        return None
 
     def search(self, query):
         self.logger.debug('Searching for %s', query)
         query_words = query.lower().split(" ")
 
+        connection = self.create_connection()
+        cursor = connection.cursor()
+
         # GET the set of pages for each word
         page_sets = []
         for word in query_words:
-            page_ids = self._get_page_ids(word)
+            page_ids = self._get_page_ids(word,cursor)
             page_sets.append(set(page_ids))
 
         # Intersect all page sets to get URLs that contain all query words
@@ -199,8 +234,9 @@ class Crawler:
             self.logger.debug('No results found for %s', query)
             return "No results found for query: {}".format(query)
 
-        urls = [self._get_url_by_page_id(page_id) for page_id in result_set]
-        corpus = [self._get_content_by_url(url) for url in urls]
+        urls = [self._get_url_by_page_id(page_id,cursor) for page_id in result_set]
+        urls = [x for x in urls if x is not None]
+        corpus = [self._get_content_by_url(url,cursor) for url in urls]
         tfidf = TfidfVectorizer(tokenizer=word_tokenize, stop_words='english')
         tfidf_matrix = tfidf.fit_transform(corpus)
         query_vec = tfidf.transform([query])
@@ -209,13 +245,18 @@ class Crawler:
         document_scores = sorted(document_scores, key=lambda x: x[1], reverse=True)
         self.logger.debug('Search finished for %s', query)
 
+        connection.commit()
+        self.release_connection(connection)
+
         top_result = document_scores[0]
         return top_result[0]
 
-
-
     def wn_search(self, query):
         self.logger.debug('WordNet search for %s', query)
+
+        connection = self.create_connection()
+        cursor = connection.cursor()
+
         # Tokenize the query into individual words
         query_words = nltk.word_tokenize(query.lower())
         # Get all synsets for each query word
@@ -236,7 +277,7 @@ class Crawler:
         # Get all page sets for each query word
         page_sets = []
         for word in query_words:
-            page_ids = self._get_page_ids(word)
+            page_ids = self._get_page_ids(word,cursor)
             page_sets.append(set(page_ids))
 
         # Intersect all page sets to get URLs that contain all query words
@@ -246,14 +287,14 @@ class Crawler:
             result_set = set()
 
         # Compute document scores using TF-IDF and cosine similarity
-        urls = [self._get_url_by_page_id(page_id) for page_id in result_set]
-
+        urls = [self._get_url_by_page_id(page_id,cursor) for page_id in result_set]
+        urls = [x for x in urls if x is not None]
         # Verify if has any URLs
         if not urls:
             self.logger.debug('WordNet search no URLs found for %s', query)
             return f"No results found for query: {query}"
         
-        corpus = [self._get_content_by_url(url) for url in urls]
+        corpus = [self._get_content_by_url(url,cursor) for url in urls]
         tfidf = TfidfVectorizer(tokenizer=word_tokenize, stop_words='english')
         tfidf_matrix = tfidf.fit_transform(corpus)
         query_vec = tfidf.transform([query])
@@ -262,24 +303,9 @@ class Crawler:
         document_scores = sorted(document_scores, key=lambda x: x[1], reverse=True)
         self.logger.debug('WordNet search finished for %s', query)
 
+        connection.commit()
+        self.release_connection(connection)
+
         top_result = document_scores[0]
         return top_result[0]
 
-
-    def _get_url_by_page_id(self, page_id):
-        self.cursor.execute('''
-            SELECT url FROM pages WHERE id = ?
-        ''', (page_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return row[0]
-        return None
-
-    def _get_content_by_url(self, url):
-        self.cursor.execute('''
-            SELECT content FROM pages WHERE url = ?
-        ''', (url,))
-        row = self.cursor.fetchone()
-        if row:
-            return row[0]
-        return None

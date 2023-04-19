@@ -62,7 +62,11 @@ async def on_message(message):
 	brief="This command say to you the project's github."
 )
 async def source(ctx, *args):
-	await ctx.author.send("https://github.com/heliopn/ATM-Bot/")
+	await ctx.author.send("""
+	ATM Bot - https://github.com/heliopn/ATM-Bot/
+	
+	RedCrow(Crawler api) - https://github.com/heliopn/red_crow
+	""")
 
 @bot.command(
 	help="Looks like you need some help.",

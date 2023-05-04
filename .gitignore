@@ -1,5 +1,6 @@
-.env
+*.env
 ATM-Bot.code-workspace
-.db
-.out
-.sh
+*.db
+*.out
+*.sh
+*.chave

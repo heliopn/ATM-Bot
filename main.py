@@ -32,16 +32,20 @@ data = {
 }
 
 def format_message(urls, ids):
-	embed = discord.Embed(title="Crawl Results", color=0x00ff00)
+	embed = discord.Embed(title="Crawler Results", color=0x00ff00)
 	for i in range(len(urls)):
 		embed.add_field(name=f"URL {i+1}", value=urls[i], inline=False)
 		embed.add_field(name=f"Task ID {i+1}", value=ids[i], inline=False)
 	return embed
 
-def format_status(urls, ids, status):
+def format_error(type_err):
+	embed = discord.Embed(title=f"{type_err} Error", color=0x00ff00)
+	embed.add_field(name=f"Too much arguments. You can't make more them 3 {type_err.lower()} at once.", inline=False)
+	return embed
+
+def format_status(ids, status):
 	embed = discord.Embed(title="Crawl Status", color=0x00ff00)
 	for i in range(len(ids)):
-		embed.add_field(name=f"URL {i+1}", value=urls[i], inline=False)
 		embed.add_field(name=f"Task ID {i+1}", value=ids[i], inline=False)
 		embed.add_field(name=f"Status {i+1}", value=status[i], inline=False)
 	return embed
@@ -95,6 +99,8 @@ async def rewind(ctx, *args):
 async def crawl(ctx, *args):
 	list_ids = []
 	for i in args:
+		# if len(args)>3:
+		# 	break
 		url = crawler_url + '/crawl'
 		data['url'] = i
 		response = requests.post(url, json=data)
@@ -110,8 +116,11 @@ async def crawl(ctx, *args):
 				print('Invalid response data type:', type(response_data))
 		else:
 			print('Request failed with status code:', response.status_code)
-	
-	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
+	# if len(args)>3:
+	# 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
+	# 	formatted_message = format_error("Crawler")
+	# else:
+	# 	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
 	formatted_message = format_message(args, list_ids)
 	await ctx.author.send(embed=formatted_message)
 
@@ -121,18 +130,17 @@ async def crawl(ctx, *args):
 )
 async def status(ctx, *args):
 	list_status = []
-	list_urls = []
 	for i in args:
+		if len(args)>3:
+			break
 		url = crawler_url + '/crawl/status/' + i
 		response = requests.get(url, json=data)
 		if response.status_code == 202:
 			response_data = response.json()
 			if isinstance(response_data, dict):
 				status_r = response_data.get('status')
-				url_r = response_data.get('result').get('url')
-				if status_r and url_r:
+				if status_r:
 					list_status.append(status_r)
-					list_urls.append(url_r)
 				else:
 					print('Status or URL not found in response data.')
 			else:
@@ -140,15 +148,29 @@ async def status(ctx, *args):
 		else:
 			print('Request failed with status code:', response.status_code)
 	
-	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
-	formatted_message = format_status(list_urls,args,list_status)
+	if len(args)>3:
+		# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
+		formatted_message = format_error("Status")
+	else:
+		# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
+		formatted_message = format_status(args,list_status)
 	await ctx.author.send(embed=formatted_message)
 
 @bot.command(
 	help="Looks like you need some help.",
-	brief="This command can search terms inside all saved pages."
+	brief="""
+	This command can search terms inside all saved pages.
+	You can add a parameter -t followed by a number between -1 and 1, where 1 = good content and -1 = bad content
+	"""
 )
 async def search(ctx, *args):
+	# Get the last argument and store it in a separate variable
+	flag = args[-2]
+	if flag=="-t":
+		threshold = args[-1]
+		data['threshold'] = str(threshold)
+		# Remove the last argument from args
+		args = args[:-2]
 	res = "Nothing"
 	url = crawler_url + '/search'
 	data['query'] = " ".join(args)
@@ -170,9 +192,18 @@ async def search(ctx, *args):
 
 @bot.command(
 	help="Looks like you need some help.",
-	brief="This command can search terms inside all saved pages."
+	brief="""
+	This command can search terms inside all saved pages.
+	You can add a parameter -t followed by a number between -1 and 1, where 1 = good content and -1 = bad content
+	"""
 )
 async def wn_search(ctx, *args):
+	flag = args[-2]
+	if flag=="-t":
+		threshold = args[-1]
+		data['threshold'] = str(threshold)
+		# Remove the last argument from args
+		args = args[:-2]
 	res = "Nothing"
 	url = crawler_url + '/wn_search'
 	data['query'] = " ".join(args)

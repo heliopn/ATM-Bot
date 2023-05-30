@@ -165,8 +165,7 @@ async def status(ctx, *args):
 )
 async def search(ctx, *args):
 	# Get the last argument and store it in a separate variable
-	flag = args[-2]
-	if flag=="-t":
+	if len(args)>=2 and args[-2]=="-t":
 		threshold = args[-1]
 		data['threshold'] = str(threshold)
 		# Remove the last argument from args
@@ -198,14 +197,47 @@ async def search(ctx, *args):
 	"""
 )
 async def wn_search(ctx, *args):
-	flag = args[-2]
-	if flag=="-t":
+	if len(args)>=2 and args[-2]=="-t":
 		threshold = args[-1]
 		data['threshold'] = str(threshold)
 		# Remove the last argument from args
 		args = args[:-2]
 	res = "Nothing"
 	url = crawler_url + '/wn_search'
+	data['query'] = " ".join(args)
+	response = requests.get(url, json=data)
+	if response.status_code == 202:
+		response_data = response.json()
+		if isinstance(response_data, dict):
+			result = response_data.get('result')
+			if result:
+				res = result
+			else:
+				print('Result not found in response data.')
+		else:
+			print('Invalid response data type:', type(response_data))
+	else:
+		print('Request failed with status code:', response.status_code)
+	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
+	await ctx.author.send(res)
+
+""" GENERATE COMMAND """
+@bot.command(
+	help="Generates content based on a search query.",
+	brief="""
+	This command can search terms inside all saved pages.
+	You can add a parameter -t followed by a number between -1 and 1, where 1 = good content and -1 = bad content.
+	After getting site contente it generates a new sentense.
+	"""
+)
+async def generate(ctx, *args):
+	if len(args)>=2 and args[-2]=="-t":
+		threshold = args[-1]
+		data['threshold'] = str(threshold)
+		# Remove the last argument from args1
+		args = args[:-2]
+	res = "Nothing"
+	url = crawler_url + '/generate'
 	data['query'] = " ".join(args)
 	response = requests.get(url, json=data)
 	if response.status_code == 202:

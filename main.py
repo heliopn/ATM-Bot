@@ -5,7 +5,6 @@ import requests
 import urllib.parse
 import sqlite3
 from bs4 import BeautifulSoup
-from crawler import Crawler
 
 
 # Get the values of the DATABASE_URL and API_KEY variables
@@ -238,6 +237,40 @@ async def generate(ctx, *args):
 		args = args[:-2]
 	res = "Nothing"
 	url = crawler_url + '/generate'
+	data['query'] = " ".join(args)
+	response = requests.get(url, json=data)
+	if response.status_code == 202:
+		response_data = response.json()
+		if isinstance(response_data, dict):
+			result = response_data.get('result')
+			if result:
+				res = result
+			else:
+				print('Result not found in response data.')
+		else:
+			print('Invalid response data type:', type(response_data))
+	else:
+		print('Request failed with status code:', response.status_code)
+	# SENDS A MESSAGE TO THE author USING THE CONTEXT OBJECT.
+	await ctx.author.send(res)
+
+""" GENERATE COMMAND WITH CHATGPT """
+@bot.command(
+	help="Generates content with ChatGPT based on a search query.",
+	brief="""
+	This command can search terms inside all saved pages.
+	You can add a parameter -t followed by a number between -1 and 1, where 1 = good content and -1 = bad content.
+	After getting site contente it generates a new sentense using ChatGPT.
+	"""
+)
+async def chatgpt(ctx, *args):
+	if len(args)>=2 and args[-2]=="-t":
+		threshold = args[-1]
+		data['threshold'] = str(threshold)
+		# Remove the last argument from args1
+		args = args[:-2]
+	res = "Nothing"
+	url = crawler_url + '/chatgpt'
 	data['query'] = " ".join(args)
 	response = requests.get(url, json=data)
 	if response.status_code == 202:

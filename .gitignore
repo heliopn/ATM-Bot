@@ -4,3 +4,5 @@ ATM-Bot.code-workspace
 *.out
 *.sh
 *.chave
+*.code-workspace
+*.pyc

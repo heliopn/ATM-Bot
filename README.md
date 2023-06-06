@@ -20,4 +20,4 @@ This bot can make you rewind a moment from your favorite anime just using one pr
     !generate --> Generate new phrases using the content of a page related to the subject you search for
     !chatgpt --> Use GPT2.0 to make phrases with the subject you search for
 
-### Look also for this crawler project --> [**Red Crow**](https://github.com/heliopn/red_crow/tree/main)
+### Also take a look at this project --> [**Red Crow**](https://github.com/heliopn/red_crow/tree/main)

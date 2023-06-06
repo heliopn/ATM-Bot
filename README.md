@@ -19,3 +19,5 @@ This bot can make you rewind a moment from your favorite anime just using one pr
     !wn_search --> Do the same as search but used when you need simmilar content and not literaly the same content. Uses WordNet to do it.
     !generate --> Generate new phrases using the content of a page related to the subject you search for
     !chatgpt --> Use GPT2.0 to make phrases with the subject you search for
+
+### Look also for this crawler project --> [**Red Crow**](https://github.com/heliopn/red_crow/tree/main)

@@ -6,6 +6,8 @@ This bot can make you rewind a moment from your favorite anime just using one pr
 &nbsp;&nbsp;&nbsp;&nbsp;[**part-1**](https://github.com/heliopn/ATM-Bot/blob/master/part_one.md)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[**part-2**](https://github.com/heliopn/ATM-Bot/blob/master/part_two.md)<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;[**part-3**](https://github.com/heliopn/ATM-Bot/blob/master/part_three.md)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[**part-4**](https://github.com/heliopn/ATM-Bot/blob/master/part_four.md)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[**part-5**](https://github.com/heliopn/ATM-Bot/blob/master/part_five.md)<br/>
 
 ### Commands:
 
